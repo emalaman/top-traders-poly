@@ -1,0 +1,18 @@
+{
+  "name": "top-traders-poly",
+  "version": "1.0.0",
+  "description": "Top 10 markets by category from Polymarket Gamma API",
+  "main": "fetch.js",
+  "scripts": {
+    "fetch": "node fetch.js",
+    "generate": "node generate.js",
+    "build": "npm run fetch && npm run generate",
+    "deploy": "npm run build && git add -A && git commit -m 'Update ranking' && git push"
+  },
+  "keywords": ["polymarket", "ranking", "markets", "gamma"],
+  "author": "EmilIA",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

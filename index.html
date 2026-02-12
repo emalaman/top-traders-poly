@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏆 Top 10 Mercados - Polymarket</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0a0a0a; color: #e5e5e5; font-family: 'Inter', sans-serif; }
+    .card { background: #1a1a1a; border: 1px solid #333; border-radius: 0.75rem; padding: 1.25rem; }
+    .badge { font-size: .7rem; padding: .15rem .5rem; border-radius: 999px; font-weight: 700; text-transform: uppercase; }
+    .stat-card { background: #1a1a1a; border: 1px solid #333; border-radius: 0.5rem; padding: 1rem; text-align: center; }
+    .stat-value { font-size: 1.5rem; font-weight: 800; color: #a78bfa; }
+    .rank-1 { color: #ffd700; font-weight: 800; }
+    .rank-2 { color: #c0c0c0; font-weight: 700; }
+    .rank-3 { color: #cd7f32; font-weight: 700; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-6">
+  <div class="max-w-7xl mx-auto">
+    <header class="mb-8 text-center">
+      <h1 class="text-3xl font-bold text-white mb-2">🏆 Top 10 Mercados por Categoria</h1>
+      <p class="text-gray-400">Ranking de mercados com maior volume e liquidez</p>
+    </header>
+
+    <!-- Categorias Navigation -->
+    <div class="flex flex-wrap gap-2 mb-6 justify-center" id="categories-nav"></div>
+
+    <!-- Top 10 List -->
+    <div class="card mb-8">
+      <h2 class="text-xl font-bold text-white mb-4" id="category-title">Crypto</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="border-b border-gray-800 text-gray-400">
+              <th class="py-2 px-3">#</th>
+              <th class="py-2 px-3">Mercado</th>
+              <th class="py-2 px-3 text-right">Volume 24h</th>
+              <th class="py-2 px-3 text-right">Liquidez</th>
+              <th class="py-2 px-3 text-right">Spread YES</th>
+              <th class="py-2 px-3 text-right">Tempo</th>
+            </tr>
+          </thead>
+          <tbody id="top10-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Stats por Categoria -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats-grid"></div>
+
+    <!-- Todos os mercados -->
+    <div class="card">
+      <h2 class="text-xl font-bold text-white mb-4">📊 Todas as Categorias</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="border-b border-gray-800 text-gray-400">
+              <th class="py-2 px-3">Categoria</th>
+              <th class="py-2 px-3 text-right">Mercados</th>
+              <th class="py-2 px-3 text-right">Vol Total (24h)</th>
+              <th class="py-2 px-3 text-right">Liquidez Média</th>
+              <th class="py-2 px-3 text-right">Principal</th>
+            </tr>
+          </thead>
+          <tbody id="all-categories-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer class="mt-8 text-center text-gray-600 text-xs border-t border-gray-800 pt-4">
+      Dados: Gamma API • Atualização automática • Última: %GENERATED_AT%
+    </footer>
+  </div>
+
+  <script>
+    const data = %DATA_JSON%;
+    let currentCategory = data.categories[0]?.name || 'Crypto';
+    
+    function fmtNumber(num) {
+      if (num >= 1e6) return (num/1e6).toFixed(1) + 'M';
+      if (num >= 1e3) return (num/1e3).toFixed(1) + 'k';
+      return num.toFixed(0);
+    }
+    
+    function formatTimeLeft(endDate) {
+      if (!endDate) return 'N/A';
+      const end = new Date(endDate).getTime();
+      const now = Date.now();
+      const diff = end - now;
+      if (diff <= 0) return 'Expirado';
+      const days = Math.ceil(diff / (1000*60*60*24));
+      return `${days}d`;
+    }
+    
+    // Renderizar navegação de categorias
+    const nav = document.getElementById('categories-nav');
+    nav.innerHTML = data.categories.map(cat => `
+      <button onclick="selectCategory('${cat.name}')" class="px-4 py-2 rounded ${cat.name === currentCategory ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'} transition">
+        ${cat.name} (${cat.marketCount})
+      </button>
+    `).join('');
+    
+    function selectCategory(catName) {
+      currentCategory = catName;
+      nav.innerHTML = data.categories.map(cat => `
+        <button onclick="selectCategory('${cat.name}')" class="px-4 py-2 rounded ${cat.name === currentCategory ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'} transition">
+          ${cat.name} (${cat.marketCount})
+        </button>
+      `).join('');
+      renderCategory();
+    }
+    
+    function renderCategory() {
+      const catData = data.categories.find(c => c.name === currentCategory);
+      if (!catData) return;
+      
+      document.getElementById('category-title').textContent = `${currentCategory} - Top 10`;
+      
+      const tbody = document.getElementById('top10-table');
+      tbody.innerHTML = catData.topMarkets.map((m, idx) => {
+        const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+        return `
+          <tr class="border-b border-gray-800 hover:bg-gray-900">
+            <td class="py-2 px-3 text-center"><span class="${rankClass} text-lg">${idx+1}</span></td>
+            <td class="py-2 px-3 text-white max-w-md truncate" title="${m.question}">${m.question}</td>
+            <td class="py-2 px-3 text-right">$${fmtNumber(m.volume)}</td>
+            <td class="py-2 px-3 text-right">$${fmtNumber(m.liquidity)}</td>
+            <td class="py-2 px-3 text-right">${(m.spread*100).toFixed(1)}%</td>
+            <td class="py-2 px-3 text-right">${formatTimeLeft(m.endDate)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    // Renderizar stats grid
+    const statsGrid = document.getElementById('stats-grid');
+    statsGrid.innerHTML = data.categories.slice(0, 4).map(cat => `
+      <div class="stat-card">
+        <div class="text-gray-400 text-xs uppercase">${cat.name}</div>
+        <div class="stat-value">${cat.marketCount}</div>
+        <div class="text-xs text-gray-400">Top Vol: ${fmtNumber(cat.topVolume)}</div>
+      </div>
+    `).join('');
+    
+    // Renderizar todas as categorias
+    const allTable = document.getElementById('all-categories-table');
+    allTable.innerHTML = data.categories.map(cat => `
+      <tr class="border-b border-gray-800 hover:bg-gray-900">
+        <td class="py-2 px-3 text-white font-bold">${cat.name}</td>
+        <td class="py-2 px-3 text-right">${cat.marketCount}</td>
+        <td class="py-2 px-3 text-right">$${fmtNumber(cat.totalVolume)}</td>
+        <td class="py-2 px-3 text-right">$${fmtNumber(cat.avgLiquidity)}</td>
+        <td class="py-2 px-3 text-right truncate max-w-xs" title="${cat.topMarket?.question || 'N/A'}">${cat.topMarket?.question?.substring(0, 50) || 'N/A'}...</td>
+      </tr>
+    `).join('');
+    
+    renderCategory();
+  </script>
+</body>
+</html>
