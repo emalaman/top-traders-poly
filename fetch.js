@@ -80,9 +80,17 @@ function groupByCategory(markets) {
     const yesPrice = parseFloat(m.outcomePrices?.[0] || 0);
     const spread = Math.abs(yesPrice - 0.5) * 2;
     
+    // Pegar o slug do evento (não do mercado)
+    let eventSlug = null;
+    if (m.events && m.events.length > 0 && m.events[0].slug) {
+      eventSlug = m.events[0].slug;
+    } else if (m.slug) {
+      eventSlug = m.slug;
+    }
+    
     categories[cat].markets.push({
       id: m.id,
-      slug: m.slug,
+      slug: eventSlug, // este é o slug do evento para a URL
       question: m.question,
       volume,
       liquidity,
@@ -138,18 +146,28 @@ async function main() {
       categories,
       // Também incluir todos os mercados ordenados por volume (top 50)
       topMarketsGlobally: markets
-        .map(m => ({
-          id: m.id,
-          slug: m.slug, // important for URLs
-          question: m.question,
-          category: m.category || 'Outros',
-          volume: parseFloat(m.volume || 0),
-          liquidity: parseFloat(m.liquidity || 0),
-          yesPrice: parseFloat(m.outcomePrices?.[0] || 0),
-          noPrice: parseFloat(m.outcomePrices?.[1] || 0),
-          endDate: m.endDate,
-          spread: Math.abs(parseFloat(m.outcomePrices?.[0] || 0) - 0.5) * 2
-        }))
+        .map(m => {
+          // Pegar event slug
+          let eventSlug = null;
+          if (m.events && m.events.length > 0 && m.events[0].slug) {
+            eventSlug = m.events[0].slug;
+          } else if (m.slug) {
+            eventSlug = m.slug;
+          }
+          
+          return {
+            id: m.id,
+            slug: eventSlug,
+            question: m.question,
+            category: m.category || 'Outros',
+            volume: parseFloat(m.volume || 0),
+            liquidity: parseFloat(m.liquidity || 0),
+            yesPrice: parseFloat(m.outcomePrices?.[0] || 0),
+            noPrice: parseFloat(m.outcomePrices?.[1] || 0),
+            endDate: m.endDate,
+            spread: Math.abs(parseFloat(m.outcomePrices?.[0] || 0) - 0.5) * 2
+          };
+        })
         .sort((a, b) => b.volume - a.volume)
         .slice(0, 50)
     };

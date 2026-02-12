@@ -112,8 +112,8 @@
     }
     
     function buildUrl(market) {
-      // Priorizar slug, senão usar ID
-      if (market.slug) return `https://polymarket.com/market/${market.slug}`;
+      // Usar o event slug (já está no campo slug após o fix no fetch.js)
+      if (market.slug) return `https://polymarket.com/event/${market.slug}`;
       if (market.id) return `https://polymarket.com/market/${market.id}`;
       return '#';
     }
