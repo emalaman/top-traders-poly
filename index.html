@@ -111,6 +111,13 @@
       renderCategory();
     }
     
+    function buildUrl(market) {
+      // Priorizar slug, senão usar ID
+      if (market.slug) return `https://polymarket.com/market/${market.slug}`;
+      if (market.id) return `https://polymarket.com/market/${market.id}`;
+      return '#';
+    }
+    
     function renderCategory() {
       const catData = data.categories.find(c => c.name === currentCategory);
       if (!catData) return;
@@ -120,13 +127,16 @@
       const tbody = document.getElementById('top10-table');
       tbody.innerHTML = catData.topMarkets.map((m, idx) => {
         const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+        const url = buildUrl(m);
         return `
           <tr class="border-b border-gray-800 hover:bg-gray-900">
             <td class="py-2 px-3 text-center"><span class="${rankClass} text-lg">${idx+1}</span></td>
-            <td class="py-2 px-3 text-white max-w-md truncate" title="${m.question}">${m.question}</td>
+            <td class="py-2 px-3">
+              <a href="${url}" target="_blank" class="text-blue-400 hover:text-blue-300 underline truncate block max-w-md" title="${m.question}">${m.question}</a>
+            </td>
             <td class="py-2 px-3 text-right">$${fmtNumber(m.volume)}</td>
             <td class="py-2 px-3 text-right">$${fmtNumber(m.liquidity)}</td>
-            <td class="py-2 px-3 text-right">${(m.spread*100).toFixed(1)}%</td>
+            <td class="py-2 px-3 text-right">${((m.spread||0)*100).toFixed(1)}%</td>
             <td class="py-2 px-3 text-right">${formatTimeLeft(m.endDate)}</td>
           </tr>
         `;
@@ -145,15 +155,22 @@
     
     // Renderizar todas as categorias
     const allTable = document.getElementById('all-categories-table');
-    allTable.innerHTML = data.categories.map(cat => `
-      <tr class="border-b border-gray-800 hover:bg-gray-900">
-        <td class="py-2 px-3 text-white font-bold">${cat.name}</td>
-        <td class="py-2 px-3 text-right">${cat.marketCount}</td>
-        <td class="py-2 px-3 text-right">$${fmtNumber(cat.totalVolume)}</td>
-        <td class="py-2 px-3 text-right">$${fmtNumber(cat.avgLiquidity)}</td>
-        <td class="py-2 px-3 text-right truncate max-w-xs" title="${cat.topMarket?.question || 'N/A'}">${cat.topMarket?.question?.substring(0, 50) || 'N/A'}...</td>
-      </tr>
-    `).join('');
+    allTable.innerHTML = data.categories.map(cat => {
+      const url = buildUrl(cat.topMarket);
+      return `
+        <tr class="border-b border-gray-800 hover:bg-gray-900">
+          <td class="py-2 px-3 text-white font-bold">${cat.name}</td>
+          <td class="py-2 px-3 text-right">${cat.marketCount}</td>
+          <td class="py-2 px-3 text-right">$${fmtNumber(cat.totalVolume)}</td>
+          <td class="py-2 px-3 text-right">$${fmtNumber(cat.avgLiquidity)}</td>
+          <td class="py-2 px-3">
+            ${cat.topMarket ? 
+              `<a href="${url}" target="_blank" class="text-blue-400 hover:text-blue-300 underline truncate block max-w-md" title="${cat.topMarket.question}">${cat.topMarket.question.substring(0, 60)}...</a>` : 
+              'N/A'}
+          </td>
+        </tr>
+      `;
+    }).join('');
     
     renderCategory();
   </script>

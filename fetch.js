@@ -82,6 +82,7 @@ function groupByCategory(markets) {
     
     categories[cat].markets.push({
       id: m.id,
+      slug: m.slug,
       question: m.question,
       volume,
       liquidity,
@@ -139,6 +140,7 @@ async function main() {
       topMarketsGlobally: markets
         .map(m => ({
           id: m.id,
+          slug: m.slug, // important for URLs
           question: m.question,
           category: m.category || 'Outros',
           volume: parseFloat(m.volume || 0),
