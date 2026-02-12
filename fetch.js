@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-const fetch = require('node-fetch');
-
 const GAMMA_API = 'https://gamma-api.polymarket.com';
 const PAGE_SIZE = 200; // max por request
 
@@ -17,9 +15,12 @@ async function fetchAllMarkets() {
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     const data = await res.json();
     
-    if (data.markets && data.markets.length > 0) {
-      allMarkets = allMarkets.concat(data.markets);
-      offset += data.markets.length;
+    // Gamma API retorna um array direto, não {markets: [...]}
+    const markets = Array.isArray(data) ? data : (data.markets || []);
+    
+    if (markets && markets.length > 0) {
+      allMarkets = allMarkets.concat(markets);
+      offset += markets.length;
     } else {
       hasMore = false;
     }
@@ -28,12 +29,42 @@ async function fetchAllMarkets() {
   return allMarkets;
 }
 
+// Inferir categoria a partir da pergunta (quando category for null)
+function inferCategory(question) {
+  if (!question) return 'Outros';
+  const q = question.toLowerCase();
+  
+  const keywords = {
+    'Crypto': ['bitcoin', 'ethereum', 'btc', 'eth', 'solana', 'xrp', 'crypto', 'blockchain', 'defi', 'nft', 'stablecoin', 'cardano', 'polkadot', 'doge', 'shiba'],
+    'Elections': ['election', 'vote', 'presidential', 'democratic', 'republican', 'biden', 'trump', 'harris', 'governor', 'senate', 'congress', 'electoral'],
+    'Politics': ['biden', 'trump', 'harris', 'congress', 'senate', 'supreme court', 'impeachment', 'administration', 'policy', 'bill', 'law'],
+    'Sports': ['super bowl', 'nfl', 'nba', 'mlb', 'nhl', 'world cup', 'champions league', 'premier league', 'fifa', 'olympics', 'tennis', 'golf', 'boxing', 'ufc', 'football', 'basketball', 'soccer'],
+    'Tech': ['ai', 'artificial intelligence', 'machine learning', 'openai', 'google', 'apple', 'microsoft', 'tesla', 'spacex', 'iphone', 'android', 'ios', 'startup', 'ipo'],
+    'US-current-affairs': ['us', 'america', 'united states', 'white house', 'pentagon', 'federal reserve', 'fed', 'inflation', 'gdp', 'economy'],
+    'Coronavirus': ['covid', 'coronavirus', 'pandemic', 'vaccine', 'fda', 'cdc', 'masks', 'lockdown'],
+    'Pop-Culture': ['oscars', 'emmys', 'tony', 'grammy', 'hollywood', 'movie', 'film', 'actor', 'actress', 'netflix', 'disney', 'marvel', 'dc']
+  };
+  
+  for (const [category, words] of Object.entries(keywords)) {
+    if (words.some(w => q.includes(w))) {
+      return category;
+    }
+  }
+  
+  return 'Outros';
+}
+
 // Agrupar mercados por categoria
 function groupByCategory(markets) {
   const categories = {};
   
   for (const m of markets) {
-    const cat = m.category || 'Outros';
+    // Usar category da API ou inferir da pergunta
+    let cat = m.category;
+    if (!cat || cat === 'null' || cat === '') {
+      cat = inferCategory(m.question);
+    }
+    
     if (!categories[cat]) {
       categories[cat] = {
         name: cat,
